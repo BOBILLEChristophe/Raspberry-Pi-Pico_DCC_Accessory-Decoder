@@ -69,7 +69,7 @@ struct Accessory {
 // uint8_t redLedPinTab[] = { 3, 6, 9, 12, 15, 18, 21, 27 };
 // uint8_t greenLedPinTab[] = { 4, 7, 10, 13, 16, 19, 22, 28 };
 
-uint8_t switchPin[8] = { 18, 19, 20, 21, 22, 26, 27 };
+uint8_t switchPin[8] = { 18, 19, 20, 21, 22, 26, 27, 28 };
 constexpr uint16_t firstAddDefault = 150;  // Première adresse par défaut du décodeur
 
 
