@@ -3,7 +3,7 @@
  *  Projet : Pico DCC Accessory Decoder
  *  Cible  : Raspberry Pi Pico / Pico W (RP2040)
  *  Auteur : Christophe BOBILLE
- *  Version 0.1
+ *  Version 0.2
  * --------------------------------------------------------------------------------------------
  *  Description :
  *    - Décode les commandes DCC accessoires avec NmraDcc
@@ -69,17 +69,20 @@ struct Accessory {
 // uint8_t redLedPinTab[] = { 3, 6, 9, 12, 15, 18, 21, 27 };
 // uint8_t greenLedPinTab[] = { 4, 7, 10, 13, 16, 19, 22, 28 };
 
+uint8_t switchPin[8] = { 18, 19, 20, 21, 22, 26, 27 };
+constexpr uint16_t firstAddDefault = 150;  // Première adresse par défaut du décodeur
+
 
 Accessory accessories[MAX_ACCESSORIES] = {
   // dccAddress, servoPin, openPosUs, closedPosUs, ...
-  { 150, 1, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
-  { 151, 3, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
-  { 152, 4, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
-  { 153, 5, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
-  { 154, 8, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
-  { 155, 10, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
-  { 156, 13, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
-  { 157, 15, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false }
+  { 0, 1, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
+  { 0, 3, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
+  { 0, 4, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
+  { 0, 5, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
+  { 0, 8, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
+  { 0, 10, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
+  { 0, 13, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false },
+  { 0, 15, 800, 1800, Servo(), WAIT_COMMAND, 800, 800, false, 0, false }
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -141,6 +144,23 @@ void notifyDccMsg(DCC_MSG* msg)
 }
 */
 
+uint16_t readBaseAddress() {
+  uint16_t addr = 0;
+  for (uint8_t i = 0; i < 8; i++) {
+    if (digitalRead(switchPin[i])) {
+      addr |= (1 << i);
+    }
+  }
+  return (addr == 0) ? firstAddDefault : addr;
+}
+
+void updateAddresses() {
+  const uint16_t baseAddr = readBaseAddress();
+  for (uint8_t i = 0; i < MAX_ACCESSORIES; i++) {
+    accessories[i].dccAddress = baseAddr + i;
+  }
+}
+
 // -------------------------------------------------------------------------------------------------
 // SETUP
 // -------------------------------------------------------------------------------------------------
@@ -149,6 +169,11 @@ void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println("Pico DCC Accessory Decoder starting...");
+
+  for (uint8_t i = 0; i < MAX_ACCESSORIES; i++) {
+    pinMode(switchPin[i], INPUT_PULLDOWN);
+  }
+  updateAddresses();
 
   for (uint8_t i = 0; i < MAX_ACCESSORIES; i++) {
 
@@ -175,6 +200,7 @@ void setup() {
 // -------------------------------------------------------------------------------------------------
 
 void loop() {
+
   Dcc.process();
 
   const uint32_t now = millis();
